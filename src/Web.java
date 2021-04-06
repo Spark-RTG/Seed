@@ -11,12 +11,13 @@
 //  2. change the growing sequence with different weight.
 //  3. change the grow tendency function.
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Random;
 
 /**
  * This is a class try to simulate the behavior of slime bacteria.
- * @version 0.0.1 Name: Xia-Zhang
+ * @version 0.0.1 Version: XiaZhang
  * Basic structure of the web. Try to find as much target as possible
  * and live as many generations as possible.
  * @author Yukun Song 2021.3.22
@@ -30,41 +31,7 @@ public class Web {
     private static final File OUTPUTMAP = new File("Map");
     private static final File OUTPUTSEED = new File("GrowHistory");
     private static final double INITIAL_ENERGY = 1500;
-
-    public static void main(String[] args) throws IOException, ClassNotFoundException {
-        Web web = new Web();
-        web.printMap();
-        for (int i = 0; i < web.getImageOfMap().length; i++) {
-            for (int j = 0; j < web.getImageOfMap()[i].length; j++) {
-                if (web.getImageOfMap()[i][j] == 2) {
-                    Target temp = new Target(j, i, 1, 100);
-                    web.getMatrixOfSeeds()[i][j] = temp;
-                    web.getGeneralWeb().add(temp);
-                }
-            }
-        }
-        PrintWriter outputSeed = new PrintWriter(OUTPUTSEED);
-        int counter = 1;
-        boolean alive = true;
-        while (alive) {
-            alive = false;
-            web.refresh();
-            for (int i = 0; i < web.generalWeb.size(); ++i) {
-                if (!(web.generalWeb.get(i) instanceof Target)) {
-                    alive = true;
-                    break;
-                }
-            }
-            outputSeed.println();
-            outputSeed.println(counter + ": ");
-            outputSeed.println();
-            if (counter % 1 == 0) {
-                web.printSeeds(outputSeed);
-            }
-            ++counter;
-        }
-        outputSeed.close();
-    }
+    private int generation;
 
     public Web(double initialEnergy) throws IOException, ClassNotFoundException {
         FileInputStream resource = new FileInputStream("OutputMatrix");
@@ -76,16 +43,46 @@ public class Web {
         matrixOfSeeds[matrixOfSeeds.length / 2][matrixOfSeeds[0].length / 2] = initial;
         generalWeb.add(initial);
         generatedWeb = new ArrayList<>();
+        generation = 0;
+        fillTargets();
     }
 
     public Web() throws IOException, ClassNotFoundException {
         this(INITIAL_ENERGY);
     }
 
+    private void fillTargets() {
+        int timesOfEmission = 1;
+        double energyGiven = 100;
+        for (int i = 0; i < imageOfMap.length; i++) {
+            for (int j = 0; j < imageOfMap[i].length; j++) {
+                if (imageOfMap[i][j] == 2) {
+                    Target temp = new Target(j, i, timesOfEmission, energyGiven);
+                    matrixOfSeeds[i][j] = temp;
+                    generalWeb.add(temp);
+                }
+            }
+        }
+    }
+
+    public double countTargetEnergy() {
+        double sum = 0;
+        for (int i = 0; i < imageOfMap.length; i++) {
+            for (int j = 0; j < imageOfMap[i].length; j++) {
+                if (imageOfMap[i][j] == 2) {
+                    Target target = (Target) matrixOfSeeds[i][j];
+                    if (target != null) {
+                        sum += target.getEnergy() * target.getTimesOfEnergyEmission();
+                    }
+                }
+            }
+        }
+        return sum;
+    }
     /**
      * Merge sort
      */
-    public void sortSeeds() {
+    private void sortSeeds() {
         generalWeb = sort(generalWeb);
     }
 
@@ -134,17 +131,33 @@ public class Web {
 
     /**
      * Refresh the web by one cycle.
+     * @return the amount of energy gained in this cycle.
      */
     public void refresh() {
-        //Add all new-born seeds to the web.
+        addNewBorn();
+        sortSeeds();
+        connectContiguous();
+        updateLinkToTarget();
+        updateSeedEnergy();
+        updateLinkToSeed();
+        ++generation;
+    }
+
+    /**
+     * Add all new-born seeds to the web.
+     */
+    private void addNewBorn() {
         generalWeb.addAll(generatedWeb);
         for (int i = 0; i < generatedWeb.size(); ++i) {
             matrixOfSeeds[generatedWeb.get(i).getPositionY()][generatedWeb.get(i).getPositionX()] = generatedWeb.get(i);
         }
         generatedWeb.clear();
-        this.sortSeeds();
+    }
 
-        //Connect all unrelated but contiguous seeds.
+    /**
+     * Connect all unrelated but contiguous seeds.
+     */
+    private void connectContiguous() {
         for (int k = 0; k < generalWeb.size(); ++k) {
             Seed seed = generalWeb.get(k);
 //            if (seed.getPositionY() == 7 && seed.getPositionX() == 7) {
@@ -190,8 +203,12 @@ public class Web {
                 }
             }
         }
+    }
 
-        //Refresh all links connected to targets.
+    /**
+     * Update all links connected to targets.
+     */
+    private void updateLinkToTarget() {
         for (int i = 0; i < generalWeb.size(); ++i) {
             Seed temp = generalWeb.get(i);
             if (temp instanceof Target) {
@@ -213,11 +230,15 @@ public class Web {
                 }
             }
         }
+    }
 
-        //Update the energy of seeds.
+    /**
+     * Update the energy of seeds.
+     */
+    private void updateSeedEnergy() {
         for (int i = 0; i < generalWeb.size(); ++i) {
             Seed seed = generalWeb.get(i);
-            System.out.println(seed);
+//            System.out.println(seed);
 //            if (seed.getPositionY() == 7 && seed.getPositionX() == 7) {
 //                System.out.println("7,7 Link status before update energy: ");
 //                for(Link link : seed.getLinks()) {
@@ -243,8 +264,12 @@ public class Web {
                 matrixOfSeeds[seed.getPositionY()][seed.getPositionX()] = null;
             }
         }
+    }
 
-        //Refresh all seeds' links
+    /**
+     * Update the links between seeds.
+     */
+    private void updateLinkToSeed() {
         for (int i = 0; i < generalWeb.size(); ++i) {
             Seed seed = generalWeb.get(i);
 //            if (seed.getPositionY() == 7 && seed.getPositionX() == 7) {
@@ -269,7 +294,7 @@ public class Web {
      * Grow the specified seed
      * @param seed seed specified
      */
-    public void growSeed(Seed seed) {
+    private void growSeed(Seed seed) {
         if (seed.ableToGrow()) {
             ArrayList<Integer> xChange = new ArrayList<>();
             ArrayList<Integer> yChange = new ArrayList<>();
@@ -289,16 +314,7 @@ public class Web {
                     }
                 } catch (ArrayIndexOutOfBoundsException ignored) { }
             }
-//            for (Integer n : x) {
-//                System.out.print(n + " ");
-//            }
-//            System.out.print(",");
-//            for (Integer n : y) {
-//                System.out.print(n + " ");
-//            }
-//            System.out.println();
             int growable = xChange.size();
-            //System.out.println(xChange.size());
             double energyGiven = Seed.energyGivenToOffSprings(seed) / growable;
             if (growable > 0) {
                 seed.setEnergy(seed.getEnergy() - Seed.energyGivenToOffSprings(seed));
@@ -312,21 +328,17 @@ public class Web {
                     if (yChange.get(i) == -1) {
                         seed.setNorthLink(tempLink);
                         temp.setSouthLink(tempLink);
-                        //System.out.println(temp.getPositionX() + ", " + temp.getPositionY() + " ");
                     } else {
                         seed.setSouthLink(tempLink);
                         temp.setNorthLink(tempLink);
-                        //System.out.println(temp.getPositionX() + ", " + temp.getPositionY());
                     }
                 } else {
                     if (xChange.get(i) == -1) {
                         seed.setWestLink(tempLink);
                         temp.setEastLink(tempLink);
-                        //System.out.println(temp.getPositionX() + ", " + temp.getPositionY());
                     } else {
                         seed.setEastLink(tempLink);
                         temp.setWestLink(tempLink);
-                        //System.out.println(temp.getPositionX() + ", " + temp.getPositionY());
                     }
                 }
                 generatedWeb.add(temp);
@@ -353,7 +365,7 @@ public class Web {
      * Print the map received.
      * @throws FileNotFoundException normally won't throw
      */
-    public void printMap() throws FileNotFoundException {
+    private void printMap() throws FileNotFoundException {
         PrintWriter outputMap = new PrintWriter(OUTPUTMAP);
         int[][] image = this.imageOfMap;
         for (int[] lines : image) {
@@ -413,6 +425,10 @@ public class Web {
 
     public ArrayList<Seed> getGeneratedWeb() {
         return generatedWeb;
+    }
+
+    public int getGeneration() {
+        return generation;
     }
 
     public void setGeneralWeb(ArrayList<Seed> generalWeb) {
