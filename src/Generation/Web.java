@@ -11,11 +11,10 @@ package Generation;//Optimize the randomization problem: Make the web know which
 //  2. change the growing sequence with different weight.
 //  3. change the grow tendency function.
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Random;
+import java.util.*;
 
 /**
- * This is a class try to simulate the behavior of slime bacteria.
+ * This is a class trying to simulate the behavior of slime bacteria.
  * @version 0.0.1 Version: XiaZhang
  * Basic structure of the web. Try to find as much target as possible
  * and live as many generations as possible.
@@ -27,27 +26,39 @@ public class Web {
     private ArrayList<Seed> generatedWeb;
     private Seed[][] matrixOfSeeds;
     private int[][] imageOfMap;
+    private int cycle;
+    private boolean alive;
+    private final ArrayList<Double> centroidsX;
+    private final ArrayList<Double> centroidsY;
+    private final ArrayList<Vector> optimizedMovements;
     private static final File OUTPUTMAP = new File("Map");
     private static final File OUTPUTSEED = new File("GrowHistory");
     private static final double INITIAL_ENERGY = 1500;
-    private int generation;
 
-    public Web(double initialEnergy) throws IOException, ClassNotFoundException {
+    public Web(double initialEnergy, ArrayList<Vector> optimizedMovements)
+            throws IOException, ClassNotFoundException {
         FileInputStream resource = new FileInputStream("OutputMatrix");
         ObjectInputStream in = new ObjectInputStream(resource);
         imageOfMap = (int[][]) in.readObject();
         matrixOfSeeds = new Seed[imageOfMap.length][imageOfMap[0].length];
         generalWeb = new ArrayList<>();
+        this.optimizedMovements = optimizedMovements;
+        centroidsX = new ArrayList<>();
+        centroidsY = new ArrayList<>();
         Seed initial = new Seed(matrixOfSeeds.length / 2, matrixOfSeeds[0].length / 2, initialEnergy);
         matrixOfSeeds[matrixOfSeeds.length / 2][matrixOfSeeds[0].length / 2] = initial;
+        centroidsX.add(7.0);
+        centroidsY.add(7.0);
         generalWeb.add(initial);
         generatedWeb = new ArrayList<>();
-        generation = 0;
+        cycle = 0;
+        alive = true;
         fillTargets();
     }
 
-    public Web() throws IOException, ClassNotFoundException {
-        this(INITIAL_ENERGY);
+    public Web(ArrayList<Vector> optimizedMovements)
+            throws IOException, ClassNotFoundException {
+        this(INITIAL_ENERGY, optimizedMovements);
     }
 
     private void fillTargets() {
@@ -78,55 +89,76 @@ public class Web {
         }
         return sum;
     }
+
     /**
      * Merge sort
      */
     private void sortSeeds() {
-        generalWeb = sort(generalWeb);
+        Comparator<Seed> comparator = new Comparator<Seed>() {
+            @Override
+            public int compare(Seed o1, Seed o2) {
+                if (o1.getEnergy() == o2.getEnergy()) {
+                    return 0;
+                } else if (o1.getEnergy() < o2.getEnergy()) {
+                    return 1;
+                } else {
+                    return -1;
+                }
+            }
+        };
+        generalWeb.sort(comparator);
+        //generalWeb = sort(generalWeb);
+        //System.out.println(generalWeb.get(0).getEnergy());
+//        if (generalWeb.get(0).getEnergy() == 184) {
+//            System.out.println(cycle);
+//            for (Seed seed: generalWeb) {
+//                System.out.println(seed);
+//            }
+//        }
     }
 
-    private ArrayList<Seed> merge(ArrayList<Seed> seeds1, ArrayList<Seed> seeds2) {
-        int firstPointer = 0;
-        int secondPointer = 0;
-        ArrayList<Seed> result = new ArrayList<>();
-        while (firstPointer < seeds1.size() && secondPointer < seeds2.size()) {
-            if (seeds1.get(firstPointer).compareTo(seeds2.get(secondPointer)) >= 0) {
-                result.add(seeds1.get(firstPointer));
-                ++firstPointer;
-            } else {
-                result.add(seeds2.get(secondPointer));
-                ++secondPointer;
-            }
-        }
-        while (firstPointer < seeds1.size()) {
-            result.add(seeds1.get(firstPointer));
-            ++firstPointer;
-        }
-        while (secondPointer < seeds2.size()) {
-            result.add(seeds2.get(secondPointer));
-            ++secondPointer;
-        }
-        return result;
-    }
-
-    private ArrayList<Seed> sort(ArrayList<Seed> seeds) {
-        if (seeds.size() > 1) {
-            int m = seeds.size() / 2;
-            ArrayList<Seed> leftSeeds = new ArrayList<>();
-            ArrayList<Seed> rightSeeds = new ArrayList<>();
-            for (int i = 0; i < m; ++i) {
-                leftSeeds.add(seeds.get(i));
-            }
-            for (int i = m; i < seeds.size(); ++i) {
-                rightSeeds.add(seeds.get(i));
-            }
-            leftSeeds = sort(leftSeeds);
-            rightSeeds = sort(rightSeeds);
-            return merge(leftSeeds, rightSeeds);
-        } else {
-            return seeds;
-        }
-    }
+//    private ArrayList<Seed> merge(ArrayList<Seed> seeds1, ArrayList<Seed> seeds2) {
+//        int firstPointer = 0;
+//        int secondPointer = 0;
+//        ArrayList<Seed> result = new ArrayList<>();
+//        while (firstPointer < seeds1.size() && secondPointer < seeds2.size()) {
+//            if (seeds1.get(firstPointer).compareTo(seeds2.get(secondPointer)) >= 0) {
+//                result.add(seeds1.get(firstPointer));
+//                ++firstPointer;
+//            } else {
+//                result.add(seeds2.get(secondPointer));
+//                ++secondPointer;
+//            }
+//        }
+//        while (firstPointer < seeds1.size()) {
+//            result.add(seeds1.get(firstPointer));
+//            ++firstPointer;
+//        }
+//        while (secondPointer < seeds2.size()) {
+//            result.add(seeds2.get(secondPointer));
+//            ++secondPointer;
+//        }
+//        return result;
+//    }
+//
+//    private ArrayList<Seed> sort(ArrayList<Seed> seeds) {
+//        if (seeds.size() > 1) {
+//            int m = seeds.size() / 2;
+//            ArrayList<Seed> leftSeeds = new ArrayList<>();
+//            ArrayList<Seed> rightSeeds = new ArrayList<>();
+//            for (int i = 0; i < m; ++i) {
+//                leftSeeds.add(seeds.get(i));
+//            }
+//            for (int i = m; i < seeds.size(); ++i) {
+//                rightSeeds.add(seeds.get(i));
+//            }
+//            leftSeeds = sort(leftSeeds);
+//            rightSeeds = sort(rightSeeds);
+//            return merge(leftSeeds, rightSeeds);
+//        } else {
+//            return seeds;
+//        }
+//    }
 
     /**
      * Refresh the web by one cycle.
@@ -137,9 +169,11 @@ public class Web {
         sortSeeds();
         connectContiguous();
         updateLinkToTarget();
+        updateCentroids();
         updateSeedEnergy();
         updateLinkToSeed();
-        ++generation;
+        updateAlive();
+        ++cycle;
     }
 
     /**
@@ -289,36 +323,46 @@ public class Web {
      */
     private void growSeed(Seed seed) {
         if (seed.ableToGrow()) {
-            ArrayList<Integer> xChange = new ArrayList<>();
-            ArrayList<Integer> yChange = new ArrayList<>();
-            int[][] surroundings = {{0, 1}, {-1, 0}, {0, -1}, {1, 0}}; //East, North, South, West
+            ArrayList<Vector> growDecision = new ArrayList<>();
+            //Map<Vector, Double> optimization = new LinkedHashMap<>();
+            //int[][] surroundings = {{0, 1}, {-1, 0}, {0, -1}, {1, 0}}; //East, North, South, West
+            Vector[] surroundings = {new Vector(1, 0), new Vector(0, -1),
+                    new Vector(-1, 0), new Vector(0, 1)};
             ArrayList<Integer> randomSequence = randomDirectionSequence(4);
             for (int i = 0; i < randomSequence.size(); ++i) {
                 int k = randomSequence.get(i);
                 try {
-                    if (matrixOfSeeds[seed.getPositionY() + surroundings[k][0]]
-                            [seed.getPositionX() + surroundings[k][1]] == null
-                            && imageOfMap[seed.getPositionY() + surroundings[k][0]]
-                            [seed.getPositionX() + surroundings[k][1]] != 0
-                            && imageOfMap[seed.getPositionY() + surroundings[k][0]]
-                            [seed.getPositionX() + surroundings[k][1]] != 2) {
-                        xChange.add(surroundings[k][1]);
-                        yChange.add(surroundings[k][0]);
+                    if (matrixOfSeeds[seed.getPositionY() + (int) surroundings[k].getYChange()]
+                            [seed.getPositionX() + (int) surroundings[k].getXChange()] == null
+                            && imageOfMap[seed.getPositionY() + (int) surroundings[k].getYChange()]
+                            [seed.getPositionX() + (int) surroundings[k].getXChange()] != 0
+                            && imageOfMap[seed.getPositionY() + (int) surroundings[k].getYChange()]
+                            [seed.getPositionX() + (int) surroundings[k].getXChange()] != 2) {
+                        growDecision.add(surroundings[k]);
                     }
                 } catch (ArrayIndexOutOfBoundsException ignored) { }
             }
-            int growable = xChange.size();
+            if (cycle < optimizedMovements.size() - 1) {
+                ArrayList<Vector> tempDecision = new ArrayList<>();
+                for (int i = 0; i < growDecision.size(); i++) {
+                    if (decideToGrow(growDecision.get(i))) {
+                        tempDecision.add(growDecision.get(i));
+                    }
+                }
+                growDecision = tempDecision;
+            }
+            int growable = growDecision.size();
             double energyGiven = Seed.energyGivenToOffSprings(seed) / growable;
             if (growable > 0) {
                 seed.setEnergy(seed.getEnergy() - Seed.energyGivenToOffSprings(seed));
             }
-            for (int i = 0; i < xChange.size(); ++i) {
+            for (int i = 0; i < growDecision.size(); ++i) {
                 Seed temp;
-                temp = new Seed(seed.getPositionX() + xChange.get(i),
-                        seed.getPositionY() + yChange.get(i), energyGiven);
+                temp = new Seed(seed.getPositionX() + (int) growDecision.get(i).getXChange(),
+                        seed.getPositionY() + (int) growDecision.get(i).getYChange(), energyGiven);
                 Link tempLink = new Link(seed, temp, Seed.CONSUME);
-                if (xChange.get(i) == 0) {
-                    if (yChange.get(i) == -1) {
+                if (growDecision.get(i).getXChange() == 0) {
+                    if ((int) growDecision.get(i).getYChange() == -1) {
                         seed.setNorthLink(tempLink);
                         temp.setSouthLink(tempLink);
                     } else {
@@ -326,7 +370,7 @@ public class Web {
                         temp.setNorthLink(tempLink);
                     }
                 } else {
-                    if (xChange.get(i) == -1) {
+                    if ((int) growDecision.get(i).getXChange() == -1) {
                         seed.setWestLink(tempLink);
                         temp.setEastLink(tempLink);
                     } else {
@@ -338,6 +382,10 @@ public class Web {
                 matrixOfSeeds[temp.getPositionY()][temp.getPositionX()] = temp;
             }
         }
+    }
+
+    private static boolean decideToGrow(Vector vector) {
+        //TODO(Think about a valid choice to decide whether to grow).
     }
 
     private static ArrayList<Integer> randomDirectionSequence(int number) {
@@ -354,6 +402,37 @@ public class Web {
         return result;
     }
 
+    private void updateAlive() {
+        if (generatedWeb.isEmpty()) {
+            alive = false;
+            for (int i = 0; i < generalWeb.size(); ++i) {
+                if (!(generalWeb.get(i) instanceof Target)) {
+                    alive = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    private void updateCentroids() {
+        double currentCentroidX = 0;
+        double currentCentroidY = 0;
+        double totalEnergy = 0;
+        for (Seed seed: generalWeb) {
+            if (!(seed instanceof Target)) {
+                currentCentroidX += seed.getPositionX() * seed.getEnergy();
+                currentCentroidY += seed.getPositionY() * seed.getEnergy();
+                totalEnergy += seed.getEnergy();
+            }
+        }
+        currentCentroidX /= totalEnergy;
+        currentCentroidY /= totalEnergy;
+        centroidsX.add(currentCentroidX);
+        centroidsY.add(currentCentroidY);
+//        if (cycle % 10 == 0) {
+//            System.out.println(currentCentroidX + ", " + currentCentroidY);
+//        }
+    }
     /**
      * Print the map received.
      * @throws FileNotFoundException normally won't throw
@@ -400,6 +479,14 @@ public class Web {
         }
     }
 
+    public ArrayList<Double> getCentroidsX() {
+        return centroidsX;
+    }
+
+    public ArrayList<Double> getCentroidsY() {
+        return centroidsY;
+    }
+
     public ArrayList<Seed> getGeneralWeb() {
         return generalWeb;
     }
@@ -420,8 +507,8 @@ public class Web {
         return generatedWeb;
     }
 
-    public int getGeneration() {
-        return generation;
+    public int getCycle() {
+        return cycle;
     }
 
     public void setGeneralWeb(ArrayList<Seed> generalWeb) {
@@ -438,5 +525,9 @@ public class Web {
 
     public void setGeneratedWeb(ArrayList<Seed> generatedWeb) {
         this.generatedWeb = generatedWeb;
+    }
+
+    public boolean isAlive() {
+        return alive;
     }
 }
