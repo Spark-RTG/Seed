@@ -342,7 +342,7 @@ public class Web {
                     }
                 } catch (ArrayIndexOutOfBoundsException ignored) { }
             }
-            if (cycle < optimizedMovements.size() - 1) {
+            if (cycle < optimizedMovements.size()) {
                 ArrayList<Vector> tempDecision = new ArrayList<>();
                 for (int i = 0; i < growDecision.size(); i++) {
                     if (decideToGrow(growDecision.get(i))) {
@@ -384,8 +384,19 @@ public class Web {
         }
     }
 
-    private static boolean decideToGrow(Vector vector) {
-        //TODO(Think about a valid choice to decide whether to grow).
+    private boolean decideToGrow(Vector vector) {
+        //TODO(Think about a valid method to decide whether to grow).
+        Vector optimized = Vector.norm(optimizedMovements.get(cycle));
+        Vector current = Vector.norm(vector);
+        double theta = Math.acos(Vector.dot(optimized, current)) / Math.PI * 180;
+        if (theta <= 90) {
+            return true;
+        } else {
+            double possibility = ((180 - theta) / 90 * 0.5) + 0.5;
+            Random rand = new Random();
+            return rand.nextDouble() <= possibility;
+        }
+
     }
 
     private static ArrayList<Integer> randomDirectionSequence(int number) {
