@@ -1,4 +1,4 @@
-//Optimize the randomization problem: Make the web know which way has the great efficiency.
+package Generation;//Optimize the randomization problem: Make the web know which way has the great efficiency.
 //Add parameter "growTendency" to each node.
 //Try to make the decrease of priority increase with time.
 //Try to let the die of seeds decrease the priority of relative links.
@@ -11,7 +11,6 @@
 //  2. change the growing sequence with different weight.
 //  3. change the grow tendency function.
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -160,12 +159,6 @@ public class Web {
     private void connectContiguous() {
         for (int k = 0; k < generalWeb.size(); ++k) {
             Seed seed = generalWeb.get(k);
-//            if (seed.getPositionY() == 7 && seed.getPositionX() == 7) {
-//                System.out.println("7,7 Link status before getting related: ");
-//                for(Link link : seed.getLinks()) {
-//                    System.out.println(link);
-//                }
-//            }
             for (int i = 0; i < seed.getLinks().length; ++i) {
                 if (seed.getLinks()[i] == null) {
                     try {
@@ -240,8 +233,8 @@ public class Web {
             Seed seed = generalWeb.get(i);
 //            System.out.println(seed);
 //            if (seed.getPositionY() == 7 && seed.getPositionX() == 7) {
-//                System.out.println("7,7 Link status before update energy: ");
-//                for(Link link : seed.getLinks()) {
+//                System.out.println("7,7 Generation.Link status before update energy: ");
+//                for(Generation.Link link : seed.getLinks()) {
 //                    System.out.println(link);
 //                }
 //            }
@@ -273,8 +266,8 @@ public class Web {
         for (int i = 0; i < generalWeb.size(); ++i) {
             Seed seed = generalWeb.get(i);
 //            if (seed.getPositionY() == 7 && seed.getPositionX() == 7) {
-//                System.out.println("7,7 Link status before update links: ");
-//                for(Link link : seed.getLinks()) {
+//                System.out.println("7,7 Generation.Link status before update links: ");
+//                for(Generation.Link link : seed.getLinks()) {
 //                    System.out.println(link);
 //                }
 //            }
@@ -282,8 +275,8 @@ public class Web {
                 seed.updateLinks();
             }
 //            if (seed.getPositionY() == 7 && seed.getPositionX() == 7) {
-//                System.out.println("7,7 Link status after update links: ");
-//                for(Link link : seed.getLinks()) {
+//                System.out.println("7,7 Generation.Link status after update links: ");
+//                for(Generation.Link link : seed.getLinks()) {
 //                    System.out.println(link);
 //                }
 //            }

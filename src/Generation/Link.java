@@ -1,3 +1,5 @@
+package Generation;
+
 public class Link {
     private Seed previous;
     private Seed target;
@@ -27,7 +29,7 @@ public class Link {
         double zoom = 4;
         this.priority -= 1;
         this.priority = Math.max(10 / (1 + Math.exp(-c1 * (energy / zoom - c2))) + 1, priority);
-//        System.out.println("Seed " + this.previous.getPositionY() + ", " + this.previous.getPositionX() +
+//        System.out.println("Generation.Seed " + this.previous.getPositionY() + ", " + this.previous.getPositionX() +
 //                " passed " + this.energy + " to seed " + this.target.getPositionY() + ", "
 //                + this.target.getPositionX());
     }

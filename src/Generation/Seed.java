@@ -1,3 +1,4 @@
+package Generation;
 
 public class Seed implements Comparable<Seed> {
 
@@ -79,6 +80,7 @@ public class Seed implements Comparable<Seed> {
         }
     }
 
+    //Require customization
     public static double energyGivenToNormalLink(Seed seed, Link link) {
         int counter = 0;
         for (int i = 0; i < seed.getLinks().length; ++i) {
@@ -101,7 +103,7 @@ public class Seed implements Comparable<Seed> {
 
     @Override
     public String toString() {
-        return "Seed at [" + positionY + "][" + positionX + "] with energy: " + energy + ".";
+        return "Generation.Seed at [" + positionY + "][" + positionX + "] with energy: " + energy + ".";
     }
 
     public double getEnergy() {

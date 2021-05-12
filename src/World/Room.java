@@ -1,3 +1,5 @@
+package World;
+
 public class Room {
     private final int exitNumber = 4;
     private int roomType; //0 stands for empty, 1 stands for start, 2 stands for exit

@@ -1,14 +1,16 @@
+package World;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Random;
 
-public class Map {
+public class WorldMap {
     private Room[][] rooms;
     private int typesOfRooms; //including empty, start, exit rooms
 
     public static void main(String[] args) throws IOException {
         FileOutputStream OutputMatrix = new FileOutputStream("OutputMatrix");
-        Map a = new Map(7, 8, 0.25);
+        WorldMap a = new WorldMap(7, 8, 0.25);
         //PrintWriter printWriter = new PrintWriter(OUTPUTMATRIX);
         int[][] roomTypeMatrix = new int[a.getRooms().length][a.getRooms()[0].length];
         for (int i = 0; i < a.getRooms().length; i++) {
@@ -25,15 +27,16 @@ public class Map {
         out.writeObject(roomTypeMatrix);
         out.close();
     }
+
     /**
      * The constructor method of Map
      * @param distanceFromStartToExit amount of rooms (including start and exit) - 1
      *           so that the center is at Map[distanceFromStartToExit][distanceFromStartToExit]
      *           the size of the map is a square with side length (distanceFromStartToExit * 2 + 1)
-     * @param typesOfRooms the total number of Room types
+     * @param typesOfRooms the total number of World.Room types
      * @param portionOfEmptyRooms the portion of rooms intended to be empty
      */
-    public Map(int distanceFromStartToExit, int typesOfRooms, double portionOfEmptyRooms){
+    public WorldMap(int distanceFromStartToExit, int typesOfRooms, double portionOfEmptyRooms){
         Room[][] map = new Room[distanceFromStartToExit * 2 + 1][distanceFromStartToExit * 2 + 1];
         for (int row = 0; row < map.length; row++) {
             for (int allColumn = 0; allColumn < map[row].length; allColumn++) {

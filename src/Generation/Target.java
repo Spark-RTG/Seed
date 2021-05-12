@@ -1,3 +1,5 @@
+package Generation;
+
 public class Target extends Seed{
     private int timesOfEnergyEmission;
     private double energyGiven;
@@ -74,7 +76,7 @@ public class Target extends Seed{
     @Override
     public String toString() {
         return "" +
-//                "Target at [" + this.getPositionY() + "][" + this.getPositionX() + "] with energy: "
+//                "Generation.Target at [" + this.getPositionY() + "][" + this.getPositionX() + "] with energy: "
 //                + this.getEnergy() + "." +
                 "";
     }
