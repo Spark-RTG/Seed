@@ -55,8 +55,9 @@ public class General {
 
     private static void optimization(ArrayList<Vector> optimizedMovements,
                                      ArrayList<Result> resultList) {
-        //TODO(Use statistical method to optimize centroidsX and centroidsY).
+        //TODO(Use statistical method to optimize the movements).
     }
+
     /**
      *
      * @param
