@@ -1,3 +1,24 @@
+//Optimize the randomization problem: Make the web know which way has the great efficiency.
+//Add parameter "growTendency" to each node.
+//Try to make the decrease of priority increase with time.
+//Try to let the die of seeds decrease the priority of relative links.
+//Try to make the web itself take more consideration with the highest overall benefit.
+//The overall benefit could be customized by users. "Live Longer" & "Eats more"
+//Record the overall benefit that the web gets for each cycle.
+//Record the centroid of the web for each cycle.
+//Let the web learn how to :
+//  1. change the priority function.
+//  2. change the growing sequence with different weight.
+//  3. change the grow tendency function.
+
+/**
+ * This is a class trying to simulate the behavior of slime bacteria.
+ * @version 0.0.2 Version: Low-Intelligence-Seed
+ * Basic structure of the web. Try to find as much target as possible
+ * and live as many cycles as possible. Optimized behavior with the experience
+ * gained by previous generations.
+ * @author Yukun Song 2021.5.13
+ */
 import Generation.Result;
 import Generation.Vector;
 import Generation.Web;
@@ -6,44 +27,37 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class General {
     private static final File OUTPUTMAP = new File("Map");
     private static final File OUTPUTSEED = new File("GrowHistory.txt");
-    private static double averageScore;
-    private static final double MAX_SCORE = 100;
     private static ArrayList<Result> resultList;
+    private static int highestCycle = 0;
+    private static double highestEnergyGain = 0;
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         resultList = new ArrayList<>();
-        ArrayList<Integer> generationAmount = new ArrayList<>();
-        ArrayList<Double> energyAmount = new ArrayList<>();
+        ArrayList<Vector> initialMovement = new ArrayList<>();
         PrintWriter outputSeed = new PrintWriter(OUTPUTSEED);
         outputSeed.println("Generation 0 :");
-        Result initGeneration = newGeneration(-1, -1, outputSeed);
+        Result initGeneration = newGeneration(initialMovement, outputSeed);
         resultList.add(initGeneration);
-//        generationAmount.add(initGeneration.getGenerationAmount());
-//        energyAmount.add(initGeneration.getTotalEnergyGained());
-        int times = 4;
+        highestCycle = initGeneration.getCycleAmount();
+        highestEnergyGain = initGeneration.getTotalEnergyGained();
+        int times = 9;
         while (times > 0) {
-            outputSeed.println("Generation " + (5 - times) + " :");
-            ArrayList<Vector> optimizedMovements = new ArrayList<>();
-//            generationAmount.add(curr.getGenerationAmount());
-//            energyAmount.add(curr.getTotalEnergyGained());
-            optimization(optimizedMovements, resultList);
+            outputSeed.println("Generation " + (10 - times) + " :");
+            ArrayList<Vector> optimizedMovements = optimization( resultList);
             Result curr = newGeneration(optimizedMovements, outputSeed);
             resultList.add(curr);
-//            double tempGeneration = 0;
-//            double tempEnergy = 0;
-//            for (Integer generation : generationAmount) {
-//                tempGeneration += generation;
-//            }
-//            tempGeneration /= generationAmount.size();
-//            averageCycle = tempGeneration;
-//            for (Double energy : energyAmount) {
-//                tempEnergy += energy;
-//            }
-//            tempEnergy /= energyAmount.size();
-//            averageEnergyGains = tempEnergy;
+            if (curr.getCycleAmount() > highestCycle) {
+                highestCycle = curr.getCycleAmount();
+            }
+            if (curr.getTotalEnergyGained() > highestEnergyGain) {
+                highestEnergyGain = curr.getTotalEnergyGained();
+            }
             --times;
         }
         outputSeed.close();
@@ -51,17 +65,60 @@ public class General {
 
     private static double calculateScore(int cycle, double energyGains) {
         //TODO(Think about a valid function for scoring the generation).
+        return (cycle / highestCycle) * (energyGains / highestEnergyGain);
     }
 
-    private static void optimization(ArrayList<Vector> optimizedMovements,
-                                     ArrayList<Result> resultList) {
+    private static ArrayList<Vector> optimization(ArrayList<Result> resultList) {
         //TODO(Use statistical method to optimize the movements).
+        ArrayList<Double> scores = new ArrayList<>();
+        for (Result result : resultList) {
+            scores.add(calculateScore(result.getCycleAmount(), result.getTotalEnergyGained()));
+        }
+        double mean = 0;
+        for (Double score: scores) {
+            mean += score;
+        }
+        mean /= scores.size();
+        double sigma = 0;
+        for (Double score: scores) {
+            sigma += (score - mean) * (score - mean);
+        }
+        sigma /= scores.size();
+        sigma = Math.sqrt(sigma);
+        Map<Result, Double> sigmaMap = new LinkedHashMap<>();
+        for (int i = 0; i < resultList.size(); i++) {
+            double result = (scores.get(i) - mean) / sigma;
+            sigmaMap.put(resultList.get(i), result);
+        }
+        return optimizationHelper(sigmaMap);
+    }
+
+    private static ArrayList<Vector> optimizationHelper(Map<Result, Double> sigmaMap) {
+        ArrayList<Vector> result = new ArrayList<>();
+        for (int i = 0; i < highestCycle; i++) {
+            Vector curr = new Vector(0, 0);
+            double sigmaSum = 0;
+            for (Map.Entry<Result, Double> entry: sigmaMap.entrySet()) {
+                if (entry.getKey().getCycleAmount() > i && entry.getValue() >= 0 ) {
+                    Vector movement = new Vector(
+                            entry.getKey().getCentroidsX().get(i + 1) -
+                                    entry.getKey().getCentroidsX().get(i),
+                            entry.getKey().getCentroidsY().get(i + 1) -
+                                    entry.getKey().getCentroidsY().get(i));
+                    movement.multiplyBy(entry.getValue());
+                    sigmaSum += entry.getValue();
+                    curr = Vector.add(curr, movement);
+                }
+            }
+            curr.divideBy(sigmaSum);
+            result.add(curr);
+        }
+        return result;
     }
 
     /**
      *
-     * @param
-     * @param
+     * @param optimizedMovements the sequence of movements optimized by previous methods.
      * @param printWriter the printWriter used to print this generation
      * @return a double array : index 0 stands for the generation number
      *                        : index 1 stands for the total energy gain in this generation

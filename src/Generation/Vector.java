@@ -19,11 +19,33 @@ public class Vector {
         return new Vector(dx, dy);
     }
 
+    public static Vector add(Vector a, Vector b) {
+        return new Vector(a.xChange + b.xChange, a.yChange + b.yChange);
+    }
+
+    public void multiplyBy(double multiplier) {
+        xChange *= multiplier;
+        yChange *= multiplier;
+    }
+
+    public void divideBy(double divider) {
+        xChange /= divider;
+        yChange /= divider;
+    }
+
     public double getXChange() {
         return xChange;
     }
 
     public double getYChange() {
         return yChange;
+    }
+
+    public void setxChange(double xChange) {
+        this.xChange = xChange;
+    }
+
+    public void setyChange(double yChange) {
+        this.yChange = yChange;
     }
 }

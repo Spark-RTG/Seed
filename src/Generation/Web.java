@@ -1,25 +1,8 @@
-package Generation;//Optimize the randomization problem: Make the web know which way has the great efficiency.
-//Add parameter "growTendency" to each node.
-//Try to make the decrease of priority increase with time.
-//Try to let the die of seeds decrease the priority of relative links.
-//Try to make the web itself take more consideration with the highest overall benefit.
-//  The overall benefit could be customized by users. "Live Longer" & "Eats more"
-//Record the overall benefit that the web gets for each cycle.
-//Record the centroid of the web for each cycle.
-//Let the web learn how to :
-//  1. change the priority function.
-//  2. change the growing sequence with different weight.
-//  3. change the grow tendency function.
+package Generation;
 import java.io.*;
 import java.util.*;
 
-/**
- * This is a class trying to simulate the behavior of slime bacteria.
- * @version 0.0.1 Version: XiaZhang
- * Basic structure of the web. Try to find as much target as possible
- * and live as many generations as possible.
- * @author Yukun Song 2021.3.22
- */
+
 public class Web {
 
     private ArrayList<Seed> generalWeb;
