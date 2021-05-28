@@ -23,12 +23,10 @@ public class Link {
     /**
      * Sigmoid function
      */
-    public void refresh() {
-        double c1 = 0.5;
-        double c2 = 32;
-        double zoom = 4;
+    //TODO(Optimize this function)
+    public void refresh(double c1, double c2, double zoom) {
         this.priority -= 1;
-        this.priority = Math.max(10 / (1 + Math.exp(-c1 * (energy / zoom - c2))) + 1, priority);
+        this.priority = Math.max(10 / (1 + Math.exp(-c1 * (energy - c2) / zoom)) + 1, priority);
 //        System.out.println("Generation.Seed " + this.previous.getPositionY() + ", " + this.previous.getPositionX() +
 //                " passed " + this.energy + " to seed " + this.target.getPositionY() + ", "
 //                + this.target.getPositionX());

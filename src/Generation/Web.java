@@ -14,17 +14,19 @@ public class Web {
     private final ArrayList<Double> centroidsX;
     private final ArrayList<Double> centroidsY;
     private final ArrayList<Vector> optimizedMovements;
+    private SigmoidPara sigmoidPara;
     private static final File OUTPUTMAP = new File("Map");
     private static final File OUTPUTSEED = new File("GrowHistory");
     private static final double INITIAL_ENERGY = 1500;
 
-    public Web(double initialEnergy, ArrayList<Vector> optimizedMovements)
+    public Web(double initialEnergy, ArrayList<Vector> optimizedMovements, SigmoidPara sigmoidPara)
             throws IOException, ClassNotFoundException {
         FileInputStream resource = new FileInputStream("OutputMatrix");
         ObjectInputStream in = new ObjectInputStream(resource);
         imageOfMap = (int[][]) in.readObject();
         matrixOfSeeds = new Seed[imageOfMap.length][imageOfMap[0].length];
         generalWeb = new ArrayList<>();
+        this.sigmoidPara = sigmoidPara;
         this.optimizedMovements = optimizedMovements;
         centroidsX = new ArrayList<>();
         centroidsY = new ArrayList<>();
@@ -41,9 +43,12 @@ public class Web {
 
     public Web(ArrayList<Vector> optimizedMovements)
             throws IOException, ClassNotFoundException {
-        this(INITIAL_ENERGY, optimizedMovements);
+        this(INITIAL_ENERGY, optimizedMovements, new SigmoidPara());
     }
 
+    public Web(SigmoidPara sigmoidPara) throws IOException, ClassNotFoundException {
+        this(INITIAL_ENERGY, new ArrayList<>(), sigmoidPara);
+    }
     private void fillTargets() {
         int timesOfEmission = 1;
         double energyGiven = 100;
@@ -223,7 +228,7 @@ public class Web {
             Seed temp = generalWeb.get(i);
             if (temp instanceof Target) {
                 try {
-                    temp.updateLinks();
+                    ((Target) temp).updateLinks();
                 } catch (IllegalStateException e) {
                     for (int j = 0; j < temp.getLinks().length; ++j) {
                         Link link = temp.getLinks()[j];
@@ -289,7 +294,7 @@ public class Web {
 //                }
 //            }
             if (!(seed instanceof Target)) {
-                seed.updateLinks();
+                seed.updateLinks(sigmoidPara);
             }
 //            if (seed.getPositionY() == 7 && seed.getPositionX() == 7) {
 //                System.out.println("7,7 Generation.Link status after update links: ");

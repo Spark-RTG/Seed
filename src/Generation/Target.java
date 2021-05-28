@@ -27,7 +27,6 @@ public class Target extends Seed{
 //        }
     }
 
-    @Override
     public void updateLinks() throws IllegalStateException {
         int counter = 0;
         for (int i = 0; i < this.getLinks().length; ++i) {

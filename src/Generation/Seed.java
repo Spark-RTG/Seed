@@ -52,7 +52,7 @@ public class Seed implements Comparable<Seed> {
         }
     }
 
-    public void updateLinks() {
+    public void updateLinks(SigmoidPara sigmoidPara) {
         for (int i = 0; i < links.length; ++i) {
             if (links[i] != null) {
                 if (links[i].getTarget() == null || links[i].getPrevious() == null) {
@@ -68,14 +68,14 @@ public class Seed implements Comparable<Seed> {
         for (int i = 0; i < links.length; ++i) {
             Link link = links[i];
             if (link != null && link.getPrevious().equals(this) && !(link.getTarget() instanceof Target)) {
-                link.setEnergy(energyGivenToNormalLink(this, link));
+                link.refresh(sigmoidPara.getC1(), sigmoidPara.getC2(), sigmoidPara.getZoom());
             }
         }
 
         for (int i = 0; i < links.length; ++i) {
             Link link = links[i];
             if (link != null && link.getPrevious().equals(this) && !(link.getTarget() instanceof Target)) {
-                link.refresh();
+                link.setEnergy(energyGivenToNormalLink(this, link));
             }
         }
     }

@@ -21,16 +21,14 @@
  * @author Yukun Song 2021.5.13
  */
 import Generation.Result;
+import Generation.SigmoidPara;
 import Generation.Vector;
 import Generation.Web;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 public class General {
     private static final File OUTPUTMAP = new File("Map");
@@ -38,13 +36,18 @@ public class General {
     private static ArrayList<Result> resultList;
     private static int highestCycle = 0;
     private static double highestEnergyGain = 0;
+    private static SigmoidPara sigmoidPara;
+    private static ArrayList<SigmoidPara> sigmoidParas;
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         resultList = new ArrayList<>();
+        sigmoidParas = new ArrayList<>();
+        sigmoidPara = new SigmoidPara();
         ArrayList<Vector> initialMovement = new ArrayList<>();
         //PrintWriter outputSeed = new PrintWriter(OUTPUTSEED);
         //outputSeed.println("Generation 0 :");
-        Result initGeneration = newGeneration(initialMovement, null);
+        Result initGeneration = newGeneration(initialMovement, sigmoidPara, null);
         resultList.add(initGeneration);
+        sigmoidParas.add(sigmoidPara);
         highestCycle = initGeneration.getCycleAmount();
         highestEnergyGain = initGeneration.getTotalEnergyGained();
         int generation = 1;
@@ -53,8 +56,10 @@ public class General {
         while (generation < total) {
             //outputSeed.println("Generation " + generation + " :");
             ArrayList<Vector> optimizedMovements = optimization(resultList);
-            Result curr = newGeneration(optimizedMovements, null);
+            sigmoidPara = optimizePara(sigmoidParas);
+            Result curr = newGeneration(optimizedMovements, sigmoidPara, null);
             resultList.add(curr);
+            sigmoidParas.add(sigmoidPara);
             if (curr.getCycleAmount() > highestCycle) {
                 highestCycle = curr.getCycleAmount();
             }
@@ -75,7 +80,52 @@ public class General {
 
     private static double calculateScore(int cycle, double energyGains) {
         //TODO(Think about a valid function for scoring the generation).
-        return (cycle / highestCycle) * (energyGains / highestEnergyGain);
+        return (cycle) * (energyGains);
+    }
+
+    private static SigmoidPara optimizePara(ArrayList<SigmoidPara> sigmoidParas) {
+        //TODO(Use statistical method to optimize the movements).
+        ArrayList<Double> scores = new ArrayList<>();
+        if (sigmoidParas.size() == 1) {
+            return new SigmoidPara();
+        }
+        for (int i = 0; i < resultList.size(); i++) {
+            scores.add(calculateScore(resultList.get(i).getCycleAmount(), resultList.get(i).getTotalEnergyGained()));
+        }
+        double mean = 0;
+        for (Double score: scores) {
+            mean += score;
+        }
+        mean /= scores.size();
+        double sigma = 0;
+        for (Double score: scores) {
+            sigma += (score - mean) * (score - mean);
+        }
+        sigma /= scores.size();
+        sigma = Math.sqrt(sigma);
+        //System.out.println(sigma);
+        Map<SigmoidPara, Double> sigmaMap = new LinkedHashMap<>();
+        for (int i = 0; i < sigmoidParas.size(); i++) {
+            double result = (scores.get(i) - mean) / sigma;
+            sigmaMap.put(sigmoidParas.get(i), result);
+        }
+        return optimizeParaHelper(sigmaMap);
+    }
+
+    private static SigmoidPara optimizeParaHelper(Map<SigmoidPara, Double> sigmoidParaDoubleMap) {
+        double c1 = 0.5;
+        double c2 = 0;
+        double zoom = 4;
+        int size = 0;
+        for (Map.Entry<SigmoidPara, Double> sigmoidParaDoubleEntry : sigmoidParaDoubleMap.entrySet()) {
+            if (sigmoidParaDoubleEntry.getValue() >= 0) {
+                c2 += sigmoidParaDoubleEntry.getKey().getC2() * sigmoidParaDoubleEntry.getValue();
+                size++;
+            }
+        }
+        //System.out.println(sigmaSum);
+        c2 /= size;
+        return new SigmoidPara(c1, c2, zoom);
     }
 
     private static ArrayList<Vector> optimization(ArrayList<Result> resultList) {
@@ -84,8 +134,8 @@ public class General {
         if (resultList.size() == 1) {
             return new ArrayList<Vector>();
         }
-        for (Result result : resultList) {
-            scores.add(calculateScore(result.getCycleAmount(), result.getTotalEnergyGained()));
+        for (int i = 0; i < resultList.size(); i++) {
+            scores.add(calculateScore(resultList.get(i).getCycleAmount(), resultList.get(i).getTotalEnergyGained()));
         }
         double mean = 0;
         for (Double score: scores) {
@@ -111,6 +161,7 @@ public class General {
     private static ArrayList<Vector> optimizationHelper(Map<Result, Double> sigmaMap) {
         ArrayList<Vector> result = new ArrayList<>();
         //System.out.println(sigmaMap.entrySet());
+        int size = 0;
         for (int i = 0; i < highestCycle; i++) {
             Vector curr = new Vector(0, 0);
             double sigmaSum = 0;
@@ -122,13 +173,14 @@ public class General {
                                     entry.getKey().getCentroidsX().get(i),
                             entry.getKey().getCentroidsY().get(i + 1) -
                                     entry.getKey().getCentroidsY().get(i));
+                    size++;
                     //movement = Vector.norm(movement);
                     movement.multiplyBy(entry.getValue());
                     sigmaSum += entry.getValue();
                     curr = Vector.add(curr, movement);
                 }
             }
-            curr.divideBy(sigmaSum);
+            curr.divideBy(size);
             curr = Vector.norm(curr);
             //System.out.println(curr);
             result.add(curr);
@@ -146,7 +198,8 @@ public class General {
      * @throws IOException normally won't throw
      * @throws ClassNotFoundException normally won't throw
      */
-    private static Result newGeneration(ArrayList<Vector> optimizedMovements, PrintWriter printWriter)
+    private static Result newGeneration(ArrayList<Vector> optimizedMovements, SigmoidPara sigmoidPara,
+                                        PrintWriter printWriter)
             throws IOException, ClassNotFoundException {
         Web web = new Web(optimizedMovements);
         double initEnergy = web.countTargetEnergy();
