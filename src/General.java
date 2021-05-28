@@ -10,7 +10,8 @@
 //  1. change the priority function.
 //  2. change the growing sequence with different weight.
 //  3. change the grow tendency function.
-
+//Two bugs: 1.Why the seed could reach eternity
+//          2.Why the seed won't grow for such long time.
 /**
  * This is a class trying to simulate the behavior of slime bacteria.
  * @version 0.0.2 Version: Low-Intelligence-Seed
@@ -46,9 +47,10 @@ public class General {
         resultList.add(initGeneration);
         highestCycle = initGeneration.getCycleAmount();
         highestEnergyGain = initGeneration.getTotalEnergyGained();
-        int times = 9;
+        int times = 4;
+        //System.out.println(System.currentTimeMillis());
         while (times > 0) {
-            outputSeed.println("Generation " + (10 - times) + " :");
+            outputSeed.println("Generation " + (5 - times) + " :");
             ArrayList<Vector> optimizedMovements = optimization( resultList);
             Result curr = newGeneration(optimizedMovements, outputSeed);
             resultList.add(curr);
@@ -60,6 +62,7 @@ public class General {
             }
             --times;
         }
+        //System.out.println(System.currentTimeMillis());
         outputSeed.close();
     }
 
@@ -137,6 +140,9 @@ public class General {
             if (web.getCycle() % 1 == 0) {
                 web.printSeeds(printWriter);
             }
+//            if (web.getCycle() >= 150) {
+//                break;
+//            }
         }
         printWriter.println("========================");
         Result result = new Result(web.getCycle(), initEnergy - web.countTargetEnergy(),
