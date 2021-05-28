@@ -14,6 +14,9 @@ public class Vector {
     }
 
     public static Vector norm(Vector a){
+        if (a.xChange == 0 && a.yChange == 0) {
+            return new Vector(0, 0);
+        }
         double dx = a.xChange / (Math.sqrt(a.xChange * a.xChange + a.yChange * a.yChange));
         double dy = a.yChange / (Math.sqrt(a.xChange * a.xChange + a.yChange * a.yChange));
         return new Vector(dx, dy);
@@ -47,5 +50,13 @@ public class Vector {
 
     public void setyChange(double yChange) {
         this.yChange = yChange;
+    }
+
+    @Override
+    public String toString() {
+        return "Vector{" +
+                "xChange=" + xChange +
+                ", yChange=" + yChange +
+                '}';
     }
 }

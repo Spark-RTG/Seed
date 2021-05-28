@@ -26,10 +26,12 @@ public class Result {
 
     @Override
     public String toString() {
-        return "Result { " +
-                "cycleAmount = " + cycleAmount +
-                ", totalEnergyGained = " + totalEnergyGained +
-                "}";
+        return "Result{" +
+                "cycleAmount=" + cycleAmount +
+                ", totalEnergyGained=" + totalEnergyGained +
+//                ", centroidsX=" + centroidsX +
+//                ", centroidsY=" + centroidsY +
+                '}';
     }
 
     public ArrayList<Double> getCentroidsX() {

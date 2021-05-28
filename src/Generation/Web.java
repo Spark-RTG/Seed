@@ -228,7 +228,7 @@ public class Web {
                     for (int j = 0; j < temp.getLinks().length; ++j) {
                         Link link = temp.getLinks()[j];
                         if (link != null) {
-                            if (link.getTarget().equals(temp)) {
+                            if (link.getTarget() != null && link.getTarget().equals(temp)) {
                                 link.setTarget(null);
                             } else {
                                 link.setPrevious(null);
@@ -325,6 +325,8 @@ public class Web {
                     }
                 } catch (ArrayIndexOutOfBoundsException ignored) { }
             }
+            //TODO("There may exist some error.")
+            //System.out.println(cycle +" "+ optimizedMovements.size());
             if (cycle < optimizedMovements.size()) {
                 ArrayList<Vector> tempDecision = new ArrayList<>();
                 for (int i = 0; i < growDecision.size(); i++) {
@@ -369,7 +371,10 @@ public class Web {
 
     private boolean decideToGrow(Vector vector) {
         //TODO(Think about a valid method to decide whether to grow).
-        Vector optimized = Vector.norm(optimizedMovements.get(cycle));
+        Vector optimized = optimizedMovements.get(cycle);
+        if (optimized.getXChange() == 0 && optimized.getYChange() == 0) {
+            return true;
+        }
         Vector current = Vector.norm(vector);
         double theta = Math.acos(Vector.dot(optimized, current)) / Math.PI * 180;
         if (theta <= 90) {

@@ -41,18 +41,19 @@ public class General {
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         resultList = new ArrayList<>();
         ArrayList<Vector> initialMovement = new ArrayList<>();
-        PrintWriter outputSeed = new PrintWriter(OUTPUTSEED);
-        outputSeed.println("Generation 0 :");
-        Result initGeneration = newGeneration(initialMovement, outputSeed);
+        //PrintWriter outputSeed = new PrintWriter(OUTPUTSEED);
+        //outputSeed.println("Generation 0 :");
+        Result initGeneration = newGeneration(initialMovement, null);
         resultList.add(initGeneration);
         highestCycle = initGeneration.getCycleAmount();
         highestEnergyGain = initGeneration.getTotalEnergyGained();
-        int times = 4;
+        int generation = 1;
+        int total = 500;
         //System.out.println(System.currentTimeMillis());
-        while (times > 0) {
-            outputSeed.println("Generation " + (5 - times) + " :");
-            ArrayList<Vector> optimizedMovements = optimization( resultList);
-            Result curr = newGeneration(optimizedMovements, outputSeed);
+        while (generation < total) {
+            //outputSeed.println("Generation " + generation + " :");
+            ArrayList<Vector> optimizedMovements = optimization(resultList);
+            Result curr = newGeneration(optimizedMovements, null);
             resultList.add(curr);
             if (curr.getCycleAmount() > highestCycle) {
                 highestCycle = curr.getCycleAmount();
@@ -60,10 +61,16 @@ public class General {
             if (curr.getTotalEnergyGained() > highestEnergyGain) {
                 highestEnergyGain = curr.getTotalEnergyGained();
             }
-            --times;
+            generation++;
         }
+        double a = 0;
+        for (Result result : resultList) {
+            a += result.getCycleAmount();
+        }
+        a /= resultList.size();
+        System.out.println(a);
         //System.out.println(System.currentTimeMillis());
-        outputSeed.close();
+        //outputSeed.close();
     }
 
     private static double calculateScore(int cycle, double energyGains) {
@@ -74,6 +81,9 @@ public class General {
     private static ArrayList<Vector> optimization(ArrayList<Result> resultList) {
         //TODO(Use statistical method to optimize the movements).
         ArrayList<Double> scores = new ArrayList<>();
+        if (resultList.size() == 1) {
+            return new ArrayList<Vector>();
+        }
         for (Result result : resultList) {
             scores.add(calculateScore(result.getCycleAmount(), result.getTotalEnergyGained()));
         }
@@ -88,34 +98,42 @@ public class General {
         }
         sigma /= scores.size();
         sigma = Math.sqrt(sigma);
+        //System.out.println(sigma);
         Map<Result, Double> sigmaMap = new LinkedHashMap<>();
         for (int i = 0; i < resultList.size(); i++) {
             double result = (scores.get(i) - mean) / sigma;
             sigmaMap.put(resultList.get(i), result);
         }
+        //System.out.println(sigmaMap);
         return optimizationHelper(sigmaMap);
     }
 
     private static ArrayList<Vector> optimizationHelper(Map<Result, Double> sigmaMap) {
         ArrayList<Vector> result = new ArrayList<>();
+        //System.out.println(sigmaMap.entrySet());
         for (int i = 0; i < highestCycle; i++) {
             Vector curr = new Vector(0, 0);
             double sigmaSum = 0;
             for (Map.Entry<Result, Double> entry: sigmaMap.entrySet()) {
-                if (entry.getKey().getCycleAmount() > i && entry.getValue() >= 0 ) {
+                //TODO(The efficiency of learning maybe depends on this threshold value.)
+                if (entry.getKey().getCycleAmount() > i && entry.getValue() >= 0.3 ) {
                     Vector movement = new Vector(
                             entry.getKey().getCentroidsX().get(i + 1) -
                                     entry.getKey().getCentroidsX().get(i),
                             entry.getKey().getCentroidsY().get(i + 1) -
                                     entry.getKey().getCentroidsY().get(i));
+                    //movement = Vector.norm(movement);
                     movement.multiplyBy(entry.getValue());
                     sigmaSum += entry.getValue();
                     curr = Vector.add(curr, movement);
                 }
             }
             curr.divideBy(sigmaSum);
+            curr = Vector.norm(curr);
+            //System.out.println(curr);
             result.add(curr);
         }
+        //System.out.println();
         return result;
     }
 
@@ -134,17 +152,22 @@ public class General {
         double initEnergy = web.countTargetEnergy();
         while (web.isAlive()) {
             web.refresh();
-            printWriter.println();
-            printWriter.println("Cycle " + web.getCycle() + " : ");
-            printWriter.println();
-            if (web.getCycle() % 1 == 0) {
-                web.printSeeds(printWriter);
+            if (printWriter != null) {
+                printWriter.println();
+                printWriter.println("Cycle " + web.getCycle() + " : ");
+                printWriter.println();
+                if (web.getCycle() % 1 == 0) {
+                    web.printSeeds(printWriter);
+                }
             }
-//            if (web.getCycle() >= 150) {
-//                break;
-//            }
+            if (web.getCycle() >= 150) {
+                throw new IllegalStateException("The eternity problem exists.");
+                //break;
+            }
         }
-        printWriter.println("========================");
+        if (printWriter != null) {
+            printWriter.println("========================");
+        }
         Result result = new Result(web.getCycle(), initEnergy - web.countTargetEnergy(),
                 web.getCentroidsX(), web.getCentroidsY());
         return result;

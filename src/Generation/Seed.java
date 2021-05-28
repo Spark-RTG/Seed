@@ -80,7 +80,7 @@ public class Seed implements Comparable<Seed> {
         }
     }
 
-    //Require customization
+    //TODO(Require customization)
     public static double energyGivenToNormalLink(Seed seed, Link link) {
         int counter = 0;
         for (int i = 0; i < seed.getLinks().length; ++i) {
