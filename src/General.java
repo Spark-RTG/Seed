@@ -46,8 +46,12 @@ public class General {
         sigmoidParas = new ArrayList<>();
         sigmoidPara = new SigmoidPara();
         ArrayList<Vector> initialMovement = new ArrayList<>();
-        PrintWriter outputSeed = new PrintWriter(OUTPUTSEED);
-        //outputSeed.println("Generation 0 :");
+
+        PrintWriter outputSeed = null;
+        outputSeed = new PrintWriter(OUTPUTSEED);
+        if (outputSeed != null) {
+            outputSeed.println("Generation 0 :");
+        }
         Result initGeneration = newGeneration(initialMovement, sigmoidPara, new ArrayList<>(),null);
         resultList.add(initGeneration);
         sigmoidParas.add(sigmoidPara);
@@ -57,7 +61,9 @@ public class General {
         int total = 10;
         //System.out.println(System.currentTimeMillis());
         while (generation < total) {
-            //outputSeed.println("Generation " + generation + " :");
+            if (outputSeed != null) {
+                outputSeed.println("Generation " + generation + " :");
+            }
             ArrayList<Vector> optimizedMovements = optimization(resultList, DONTOPTIMIZE);
             //sigmoidPara = optimizePara(sigmoidParas);
             ArrayList<Vector> optimizedCenters = optimization(resultList, CENTER);
@@ -83,7 +89,9 @@ public class General {
         a /= resultList.size();
         System.out.println(a);
         //System.out.println(System.currentTimeMillis());
-        outputSeed.close();
+        if (outputSeed != null) {
+            outputSeed.close();
+        }
     }
 
     private static double calculateScore(int cycle, double energyGains) {
