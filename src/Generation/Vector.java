@@ -26,6 +26,16 @@ public class Vector {
         return new Vector(a.xChange + b.xChange, a.yChange + b.yChange);
     }
 
+    /**
+     * Minus a by b
+     * @param a The minuend vector
+     * @param b The subtrahend vector
+     * @return a - b
+     */
+    public static Vector minus(Vector a, Vector b) {
+        return new Vector(a.xChange - b.xChange, a.yChange - b.yChange);
+    }
+
     public void multiplyBy(double multiplier) {
         xChange *= multiplier;
         yChange *= multiplier;

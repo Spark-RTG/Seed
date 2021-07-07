@@ -38,26 +38,33 @@ public class General {
     private static double highestEnergyGain = 0;
     private static SigmoidPara sigmoidPara;
     private static ArrayList<SigmoidPara> sigmoidParas;
+    private static final int CENTROID = 0;
+    private static final int CENTER = 1;
+    private static final int DONTOPTIMIZE = 2;
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         resultList = new ArrayList<>();
         sigmoidParas = new ArrayList<>();
         sigmoidPara = new SigmoidPara();
         ArrayList<Vector> initialMovement = new ArrayList<>();
-        //PrintWriter outputSeed = new PrintWriter(OUTPUTSEED);
+        PrintWriter outputSeed = new PrintWriter(OUTPUTSEED);
         //outputSeed.println("Generation 0 :");
-        Result initGeneration = newGeneration(initialMovement, sigmoidPara, null);
+        Result initGeneration = newGeneration(initialMovement, sigmoidPara, new ArrayList<>(),null);
         resultList.add(initGeneration);
         sigmoidParas.add(sigmoidPara);
         highestCycle = initGeneration.getCycleAmount();
         highestEnergyGain = initGeneration.getTotalEnergyGained();
         int generation = 1;
-        int total = 500;
+        int total = 10;
         //System.out.println(System.currentTimeMillis());
         while (generation < total) {
             //outputSeed.println("Generation " + generation + " :");
-            ArrayList<Vector> optimizedMovements = optimization(resultList);
-            sigmoidPara = optimizePara(sigmoidParas);
-            Result curr = newGeneration(optimizedMovements, sigmoidPara, null);
+            ArrayList<Vector> optimizedMovements = optimization(resultList, DONTOPTIMIZE);
+            //sigmoidPara = optimizePara(sigmoidParas);
+            ArrayList<Vector> optimizedCenters = optimization(resultList, CENTER);
+            Result curr = newGeneration(optimizedMovements, sigmoidPara, optimizedCenters,outputSeed);
+            if (curr == null) {
+                continue;
+            }
             resultList.add(curr);
             sigmoidParas.add(sigmoidPara);
             if (curr.getCycleAmount() > highestCycle) {
@@ -68,19 +75,22 @@ public class General {
             }
             generation++;
         }
+        //System.out.println(highestCycle);
         double a = 0;
         for (Result result : resultList) {
-            a += result.getCycleAmount();
+            a += calculateScore(result.getCycleAmount(), result.getTotalEnergyGained());
         }
         a /= resultList.size();
         System.out.println(a);
         //System.out.println(System.currentTimeMillis());
-        //outputSeed.close();
+        outputSeed.close();
     }
 
     private static double calculateScore(int cycle, double energyGains) {
         //TODO(Think about a valid function for scoring the generation).
-        return (cycle) * (energyGains);
+        //return ((double) cycle / highestCycle) * ((double) energyGains / highestEnergyGain);
+        return ((double) cycle / highestCycle);
+        //return (cycle) * (energyGains);
     }
 
     private static SigmoidPara optimizePara(ArrayList<SigmoidPara> sigmoidParas) {
@@ -128,34 +138,90 @@ public class General {
         return new SigmoidPara(c1, c2, zoom);
     }
 
-    private static ArrayList<Vector> optimization(ArrayList<Result> resultList) {
-        //TODO(Use statistical method to optimize the movements).
-        ArrayList<Double> scores = new ArrayList<>();
-        if (resultList.size() == 1) {
+    private static ArrayList<Vector> optimization(ArrayList<Result> rList, int type) {
+        //ArrayList<Double> scores = new ArrayList<>();
+        if (rList.size() == 1) {
             return new ArrayList<Vector>();
         }
-        for (int i = 0; i < resultList.size(); i++) {
-            scores.add(calculateScore(resultList.get(i).getCycleAmount(), resultList.get(i).getTotalEnergyGained()));
+        Map<Double, Integer> indicesMap = new HashMap<>();
+        PriorityQueue<Double> heap = new PriorityQueue<>(new Comparator<Double>() {
+            @Override
+            public int compare(Double o1, Double o2) {
+                if (o2 - o1 > 0) {
+                    return 1;
+                } else if (o2 - o1 < 0) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            }
+        });
+        for (int i = 0; i < rList.size(); i++) {
+            double temp = calculateScore(rList.get(i).getCycleAmount(), rList.get(i).getTotalEnergyGained());
+            indicesMap.put(temp, i);
+            heap.add(temp);
+            //System.out.println(temp);
+            //scores.add(temp);
         }
-        double mean = 0;
-        for (Double score: scores) {
-            mean += score;
+        ArrayList<Result> chosenResults = new ArrayList<>();
+        int maxCycle = 0;
+        for (int i = 0; i < 5 && i < heap.size(); i++) {
+            Result temp = rList.get(indicesMap.get(heap.poll()));
+            chosenResults.add(temp);
+            if (temp.getCycleAmount() > maxCycle) {
+                maxCycle = temp.getCycleAmount();
+            }
         }
-        mean /= scores.size();
-        double sigma = 0;
-        for (Double score: scores) {
-            sigma += (score - mean) * (score - mean);
+        ArrayList<Vector> resultCentroids = new ArrayList<>();
+        ArrayList<Vector> resultCenters = new ArrayList<>();
+        for (int i = 0; i < maxCycle - 1; i++) {
+            Vector currentCentroidMove = new Vector(0, 0);
+            Vector currentCenterMove = new Vector(0, 0);
+            int effectiveCount = 0;
+            for (int j = 0; j < chosenResults.size(); j++) {
+                if (chosenResults.get(j).getCycleAmount() < i + 2) {
+                    continue;
+                }
+                ArrayList<Double> xList = chosenResults.get(j).getCentroidsX();
+                ArrayList<Double> yList = chosenResults.get(j).getCentroidsY();
+                ArrayList<Vector> cList = chosenResults.get(j).getCenterList();
+                currentCentroidMove = Vector.add(currentCentroidMove,
+                        new Vector(xList.get(i + 1) - xList.get(i),
+                        yList.get(i + 1) - yList.get(i)));
+                currentCenterMove = Vector.add(currentCenterMove, Vector.minus(cList.get(i + 1), cList.get(i)));
+                effectiveCount++;
+            }
+            currentCentroidMove.divideBy(effectiveCount);
+            currentCenterMove.divideBy(effectiveCount);
+            resultCentroids.add(currentCentroidMove);
+            resultCenters.add(currentCenterMove);
         }
-        sigma /= scores.size();
-        sigma = Math.sqrt(sigma);
-        //System.out.println(sigma);
-        Map<Result, Double> sigmaMap = new LinkedHashMap<>();
-        for (int i = 0; i < resultList.size(); i++) {
-            double result = (scores.get(i) - mean) / sigma;
-            sigmaMap.put(resultList.get(i), result);
+        if (type == CENTROID) {
+            return resultCentroids;
+        } else if (type == CENTER){
+            return resultCenters;
+        } else {
+            return new ArrayList<>();
         }
-        //System.out.println(sigmaMap);
-        return optimizationHelper(sigmaMap);
+//        double mean = 0;
+//        for (Double score: scores) {
+//            mean += score;
+//        }
+//        mean /= scores.size();
+//        double sigma = 0;
+//        for (Double score: scores) {
+//            sigma += (score - mean) * (score - mean);
+//        }
+//        sigma /= scores.size();
+//        sigma = Math.sqrt(sigma);
+//        //System.out.println(sigma);
+//        Map<Result, Double> sigmaMap = new LinkedHashMap<>();
+//        for (int i = 0; i < resultList.size(); i++) {
+//            double result = (scores.get(i) - mean) / sigma;
+//            sigmaMap.put(resultList.get(i), result);
+//        }
+//        //System.out.println(sigmaMap);
+//        return optimizationHelper(sigmaMap);
     }
 
     private static ArrayList<Vector> optimizationHelper(Map<Result, Double> sigmaMap) {
@@ -199,9 +265,10 @@ public class General {
      * @throws ClassNotFoundException normally won't throw
      */
     private static Result newGeneration(ArrayList<Vector> optimizedMovements, SigmoidPara sigmoidPara,
+                                        ArrayList<Vector> optimizedCenterMovements,
                                         PrintWriter printWriter)
             throws IOException, ClassNotFoundException {
-        Web web = new Web(optimizedMovements);
+        Web web = new Web(optimizedMovements, optimizedCenterMovements);
         double initEnergy = web.countTargetEnergy();
         while (web.isAlive()) {
             web.refresh();
@@ -214,7 +281,8 @@ public class General {
                 }
             }
             if (web.getCycle() >= 150) {
-                throw new IllegalStateException("The eternity problem exists.");
+                return null;
+                //throw new IllegalStateException("The eternity problem exists.");
                 //break;
             }
         }
@@ -222,7 +290,7 @@ public class General {
             printWriter.println("========================");
         }
         Result result = new Result(web.getCycle(), initEnergy - web.countTargetEnergy(),
-                web.getCentroidsX(), web.getCentroidsY());
+                web.getCentroidsX(), web.getCentroidsY(), web.getCenterList());
         return result;
     }
 }

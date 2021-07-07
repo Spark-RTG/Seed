@@ -10,13 +10,14 @@ public class Result {
 //    private final double zoom;
     private final ArrayList<Double> centroidsX;
     private final ArrayList<Double> centroidsY;
-
+    private final ArrayList<Vector> centerList;
     public Result(int cycleAmount, double totalEnergyGained,
-                  ArrayList<Double> centroidsX, ArrayList<Double> centroidsY) {
+                  ArrayList<Double> centroidsX, ArrayList<Double> centroidsY, ArrayList<Vector> centerList) {
         this.cycleAmount = cycleAmount;
         this.totalEnergyGained = totalEnergyGained;
         this.centroidsX = centroidsX;
         this.centroidsY = centroidsY;
+        this.centerList = centerList;
 //        this.c1 = 0.5;
 //        this.c2 = 28;
 //        this.zoom = 4;
@@ -56,5 +57,9 @@ public class Result {
 
     public ArrayList<Double> getCentroidsY() {
         return centroidsY;
+    }
+
+    public ArrayList<Vector> getCenterList() {
+        return centerList;
     }
 }

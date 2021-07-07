@@ -1,5 +1,8 @@
 package Generation;
 
+import java.util.ArrayList;
+import java.util.Random;
+
 public class Seed implements Comparable<Seed> {
 
     private int positionX;
@@ -52,7 +55,7 @@ public class Seed implements Comparable<Seed> {
         }
     }
 
-    public void updateLinks(SigmoidPara sigmoidPara) {
+    public void updateLinks(SigmoidPara sigmoidPara, int currentCycle, ArrayList<Vector> optimizedCenterMovements) {
         for (int i = 0; i < links.length; ++i) {
             if (links[i] != null) {
                 if (links[i].getTarget() == null || links[i].getPrevious() == null) {
@@ -71,25 +74,45 @@ public class Seed implements Comparable<Seed> {
                 link.refresh(sigmoidPara.getC1(), sigmoidPara.getC2(), sigmoidPara.getZoom());
             }
         }
-
+        Vector currentMovement = new Vector(0, 0);
+        if (currentCycle < optimizedCenterMovements.size()) {
+            currentMovement = optimizedCenterMovements.get(currentCycle);
+        }
         for (int i = 0; i < links.length; ++i) {
             Link link = links[i];
             if (link != null && link.getPrevious().equals(this) && !(link.getTarget() instanceof Target)) {
-                link.setEnergy(energyGivenToNormalLink(this, link));
+                link.setEnergy(energyGivenToNormalLink(this,
+                        link.getPriority() * tempWeightOfLinkBasedOnCenter(link, currentMovement),
+                        currentMovement));
             }
         }
     }
 
+    public static double tempWeightOfLinkBasedOnCenter(Link link, Vector movement) {
+        Vector vector = new Vector(link.getTarget().getPositionX() - link.getPrevious().getPositionX(),
+                link.getTarget().getPositionY() - link.getPrevious().getPositionY());
+        if (movement.getXChange() == 0 && movement.getYChange() == 0) {
+            return 1;
+        }
+        Vector current = Vector.norm(vector);
+        double theta = Math.acos(Vector.dot(movement, current)) / Math.PI * 180;
+        if (theta <= 90) {
+            return 1;
+        } else {
+            return ((180 - theta) / 90 * 0.8) + 0.2;
+        }
+    }
+
     //TODO(Require customization)
-    public static double energyGivenToNormalLink(Seed seed, Link link) {
+    public static double energyGivenToNormalLink(Seed seed, double currentWeight, Vector movement) {
         int counter = 0;
         for (int i = 0; i < seed.getLinks().length; ++i) {
             Link singleLink = seed.getLinks()[i];
             if (singleLink != null && singleLink.getPrevious().equals(seed)) {
-                counter += singleLink.getPriority();
+                counter += singleLink.getPriority() * tempWeightOfLinkBasedOnCenter(singleLink, movement);
             }
         }
-        return Math.max((seed.energy - CONSUME * 2) / counter * link.getPriority(), 0);
+        return Math.max((seed.energy - CONSUME * 2) / counter * currentWeight, 0);
     }
 
     public static double energyGivenToOffSprings(Seed seed) {

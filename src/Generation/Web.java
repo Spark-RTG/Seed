@@ -13,13 +13,16 @@ public class Web {
     private boolean alive;
     private final ArrayList<Double> centroidsX;
     private final ArrayList<Double> centroidsY;
+    private final ArrayList<Vector> centerList; //This is oriented by 0,0 instead of 7,7
     private final ArrayList<Vector> optimizedMovements;
+    private final ArrayList<Vector> optimizedCenterMovements;
     private SigmoidPara sigmoidPara;
     private static final File OUTPUTMAP = new File("Map");
     private static final File OUTPUTSEED = new File("GrowHistory");
     private static final double INITIAL_ENERGY = 1500;
 
-    public Web(double initialEnergy, ArrayList<Vector> optimizedMovements, SigmoidPara sigmoidPara)
+    public Web(double initialEnergy, ArrayList<Vector> optimizedMovements, SigmoidPara sigmoidPara,
+               ArrayList<Vector> optimizedCenterMovements)
             throws IOException, ClassNotFoundException {
         FileInputStream resource = new FileInputStream("OutputMatrix");
         ObjectInputStream in = new ObjectInputStream(resource);
@@ -28,8 +31,10 @@ public class Web {
         generalWeb = new ArrayList<>();
         this.sigmoidPara = sigmoidPara;
         this.optimizedMovements = optimizedMovements;
+        this.optimizedCenterMovements = optimizedCenterMovements;
         centroidsX = new ArrayList<>();
         centroidsY = new ArrayList<>();
+        centerList = new ArrayList<>();
         Seed initial = new Seed(matrixOfSeeds.length / 2, matrixOfSeeds[0].length / 2, initialEnergy);
         matrixOfSeeds[matrixOfSeeds.length / 2][matrixOfSeeds[0].length / 2] = initial;
         centroidsX.add(7.0);
@@ -41,13 +46,13 @@ public class Web {
         fillTargets();
     }
 
-    public Web(ArrayList<Vector> optimizedMovements)
+    public Web(ArrayList<Vector> optimizedMovements, ArrayList<Vector> optimizedCenterMovements)
             throws IOException, ClassNotFoundException {
-        this(INITIAL_ENERGY, optimizedMovements, new SigmoidPara());
+        this(INITIAL_ENERGY, optimizedMovements, new SigmoidPara(), optimizedCenterMovements);
     }
 
     public Web(SigmoidPara sigmoidPara) throws IOException, ClassNotFoundException {
-        this(INITIAL_ENERGY, new ArrayList<>(), sigmoidPara);
+        this(INITIAL_ENERGY, new ArrayList<>(), sigmoidPara, new ArrayList<>());
     }
     private void fillTargets() {
         int timesOfEmission = 1;
@@ -85,13 +90,7 @@ public class Web {
         Comparator<Seed> comparator = new Comparator<Seed>() {
             @Override
             public int compare(Seed o1, Seed o2) {
-                if (o1.getEnergy() == o2.getEnergy()) {
-                    return 0;
-                } else if (o1.getEnergy() < o2.getEnergy()) {
-                    return 1;
-                } else {
-                    return -1;
-                }
+                return Double.compare(o2.getEnergy(), o1.getEnergy());
             }
         };
         generalWeb.sort(comparator);
@@ -157,9 +156,9 @@ public class Web {
         sortSeeds();
         connectContiguous();
         updateLinkToTarget();
-        updateCentroids();
-        updateSeedEnergy();
+        updateCentroidsAndCenters();
         updateLinkToSeed();
+        updateSeedEnergy();
         updateAlive();
         ++cycle;
     }
@@ -294,7 +293,7 @@ public class Web {
 //                }
 //            }
             if (!(seed instanceof Target)) {
-                seed.updateLinks(sigmoidPara);
+                seed.updateLinks(sigmoidPara, cycle, optimizedCenterMovements);
             }
 //            if (seed.getPositionY() == 7 && seed.getPositionX() == 7) {
 //                System.out.println("7,7 Generation.Link status after update links: ");
@@ -312,8 +311,9 @@ public class Web {
     private void growSeed(Seed seed) {
         if (seed.ableToGrow()) {
             ArrayList<Vector> growDecision = new ArrayList<>();
+            ArrayList<Vector> growHelper = new ArrayList<>();
             //Map<Vector, Double> optimization = new LinkedHashMap<>();
-            //int[][] surroundings = {{0, 1}, {-1, 0}, {0, -1}, {1, 0}}; //East, North, South, West
+            // East, North, West, South
             Vector[] surroundings = {new Vector(1, 0), new Vector(0, -1),
                     new Vector(-1, 0), new Vector(0, 1)};
             ArrayList<Integer> randomSequence = randomDirectionSequence(4);
@@ -326,6 +326,11 @@ public class Web {
                             [seed.getPositionX() + (int) surroundings[k].getXChange()] != 0
                             && imageOfMap[seed.getPositionY() + (int) surroundings[k].getYChange()]
                             [seed.getPositionX() + (int) surroundings[k].getXChange()] != 2) {
+                        growHelper.add(
+                                new Vector(seed.getPositionX() - centroidsX.get(cycle)
+                                        + surroundings[k].getXChange(),
+                                        seed.getPositionY() - centroidsY.get(cycle)
+                                                + surroundings[k].getYChange()));
                         growDecision.add(surroundings[k]);
                     }
                 } catch (ArrayIndexOutOfBoundsException ignored) { }
@@ -335,7 +340,7 @@ public class Web {
             if (cycle < optimizedMovements.size()) {
                 ArrayList<Vector> tempDecision = new ArrayList<>();
                 for (int i = 0; i < growDecision.size(); i++) {
-                    if (decideToGrow(growDecision.get(i))) {
+                    if (decideToGrow(growHelper.get(i))) {
                         tempDecision.add(growDecision.get(i));
                     }
                 }
@@ -382,10 +387,10 @@ public class Web {
         }
         Vector current = Vector.norm(vector);
         double theta = Math.acos(Vector.dot(optimized, current)) / Math.PI * 180;
-        if (theta <= 90) {
+        if (theta >= 90) {
             return true;
         } else {
-            double possibility = ((180 - theta) / 90 * 0.5) + 0.5;
+            double possibility = (theta / 90 * 0.8) + 0.2;
             Random rand = new Random();
             return rand.nextDouble() <= possibility;
         }
@@ -418,21 +423,27 @@ public class Web {
         }
     }
 
-    private void updateCentroids() {
+    private void updateCentroidsAndCenters() {
         double currentCentroidX = 0;
         double currentCentroidY = 0;
+        double currentCenterX = 0;
+        double currentCenterY = 0;
         double totalEnergy = 0;
         for (Seed seed: generalWeb) {
             if (!(seed instanceof Target)) {
-                currentCentroidX += seed.getPositionX() * seed.getEnergy();
-                currentCentroidY += seed.getPositionY() * seed.getEnergy();
+                currentCentroidX += seed.getPositionX();
+                currentCenterX += seed.getPositionX() * seed.getEnergy();
+                currentCentroidY += seed.getPositionY();
+                currentCenterY += seed.getPositionY() * seed.getEnergy();
                 totalEnergy += seed.getEnergy();
             }
         }
-        currentCentroidX /= totalEnergy;
-        currentCentroidY /= totalEnergy;
-        centroidsX.add(currentCentroidX);
-        centroidsY.add(currentCentroidY);
+        centroidsX.add(currentCentroidX / generalWeb.size());
+        centroidsY.add(currentCentroidY / generalWeb.size());
+        currentCenterX /= totalEnergy;
+        currentCenterY /= totalEnergy;
+        centerList.add(new Vector(currentCenterX, currentCenterY));
+        //        centroidsY.add(currentCentroidY);
 //        if (cycle % 10 == 0) {
 //            System.out.println(currentCentroidX + ", " + currentCentroidY);
 //        }
@@ -533,5 +544,9 @@ public class Web {
 
     public boolean isAlive() {
         return alive;
+    }
+
+    public ArrayList<Vector> getCenterList() {
+        return centerList;
     }
 }
