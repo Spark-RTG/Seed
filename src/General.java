@@ -48,7 +48,7 @@ public class General {
         ArrayList<Vector> initialMovement = new ArrayList<>();
 
         PrintWriter outputSeed = null;
-        outputSeed = new PrintWriter(OUTPUTSEED);
+        //outputSeed = new PrintWriter(OUTPUTSEED);
         if (outputSeed != null) {
             outputSeed.println("Generation 0 :");
         }
@@ -58,7 +58,7 @@ public class General {
         highestCycle = initGeneration.getCycleAmount();
         highestEnergyGain = initGeneration.getTotalEnergyGained();
         int generation = 1;
-        int total = 10;
+        int total = 500;
         //System.out.println(System.currentTimeMillis());
         while (generation < total) {
             if (outputSeed != null) {
@@ -66,7 +66,7 @@ public class General {
             }
             ArrayList<Vector> optimizedMovements = optimization(resultList, DONTOPTIMIZE);
             //sigmoidPara = optimizePara(sigmoidParas);
-            ArrayList<Vector> optimizedCenters = optimization(resultList, CENTER);
+            ArrayList<Vector> optimizedCenters = optimization(resultList, DONTOPTIMIZE);
             Result curr = newGeneration(optimizedMovements, sigmoidPara, optimizedCenters,outputSeed);
             if (curr == null) {
                 continue;
@@ -97,7 +97,7 @@ public class General {
     private static double calculateScore(int cycle, double energyGains) {
         //TODO(Think about a valid function for scoring the generation).
         //return ((double) cycle / highestCycle) * ((double) energyGains / highestEnergyGain);
-        return ((double) cycle / highestCycle);
+        return ((double) cycle * energyGains / 100);
         //return (cycle) * (energyGains);
     }
 
